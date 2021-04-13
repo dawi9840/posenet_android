@@ -1,0 +1,46 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+
+apply plugin: 'kotlin-android-extensions'
+
+android {
+  compileSdkVersion 30     //指定這個模組要使用哪格版本的Android SDK來編譯，是用API版本編號表示。
+  buildToolsVersion "29.0.0"
+  defaultConfig {
+    applicationId "org.tensorflow.lite.examples.posenet" //通常設定成主程式檔所在的套件路徑。
+    minSdkVersion 21       //限制App需再哪一個版本上的Android系統才能安裝。
+    targetSdkVersion 30    //指定程式碼要使用哪一個版本的Android SDK功能，以確保App可以在較舊的Android上也能執行。
+    versionCode 1          //設定程式的版本號碼。
+    versionName "1.0"      //設定程式的版本名稱。
+    testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
+      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+  }
+  aaptOptions {
+    /** 不壓縮.tflite文件，若不加會因為引入模型有問題導致運行出錯 **/
+    noCompress "tflite"
+  }
+  lintOptions {
+    checkReleaseBuilds false
+    // Or, if you prefer, you can continue to check for errors in release builds,
+    // but continue the build even when errors are found:
+    abortOnError false
+  }
+}
+
+dependencies {           //需要用到那些程式庫。
+  implementation fileTree(dir: 'libs', include: ['*.jar'])   //引入lib
+  implementation project(":posenet")                         //引入posenet lib
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+  implementation 'androidx.appcompat:appcompat:1.2.0'
+  implementation 'androidx.core:core-ktx:1.3.2'
+  implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+  testImplementation 'junit:junit:4.13.1'
+  androidTestImplementation 'androidx.test:runner:1.3.0'
+  androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
+}
