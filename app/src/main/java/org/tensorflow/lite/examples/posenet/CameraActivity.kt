@@ -16,20 +16,26 @@
 
 package org.tensorflow.lite.examples.posenet
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
+import android.media.AudioManager
 import android.media.Image
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
+import android.view.SurfaceHolder
+import android.view.SurfaceView
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.res.ResourcesCompat
 import org.tensorflow.lite.examples.posenet.lib.BodyPart
 import org.tensorflow.lite.examples.posenet.lib.Posenet
+import java.lang.Exception
 import kotlin.math.abs
 
 class CameraActivity : AppCompatActivity(), View.OnClickListener {
@@ -41,41 +47,124 @@ class CameraActivity : AppCompatActivity(), View.OnClickListener {
 
     setContentView(R.layout.tfe_pn_activity_test)
     findViewById()
+    initView()
     btnPlayVideoView()
-    //btnShowPoseNetImg()
+    btnShowPoseNetImg()
+    btnPlaySurfaceView()
+  }
 
-  }
-  override fun onClick(v: View?) {
-  }
   private var simpleVideoView: VideoView? = null
   private var sampleImageView: ImageView?= null
   private var mediaControls: MediaController? = null
   private val bodyJoints = listOf(
-      Pair(BodyPart.LEFT_WRIST, BodyPart.LEFT_ELBOW),
-      Pair(BodyPart.LEFT_ELBOW, BodyPart.LEFT_SHOULDER),
-      Pair(BodyPart.LEFT_SHOULDER, BodyPart.RIGHT_SHOULDER),
-      Pair(BodyPart.RIGHT_SHOULDER, BodyPart.RIGHT_ELBOW),
-      Pair(BodyPart.RIGHT_ELBOW, BodyPart.RIGHT_WRIST),
-      Pair(BodyPart.LEFT_SHOULDER, BodyPart.LEFT_HIP),
-      Pair(BodyPart.LEFT_HIP, BodyPart.RIGHT_HIP),
-      Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_SHOULDER),
-      Pair(BodyPart.LEFT_HIP, BodyPart.LEFT_KNEE),
-      Pair(BodyPart.LEFT_KNEE, BodyPart.LEFT_ANKLE),
-      Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_KNEE),
-      Pair(BodyPart.RIGHT_KNEE, BodyPart.RIGHT_ANKLE)
-    )               /** List of body joints that should be connected.    */
+          Pair(BodyPart.LEFT_WRIST, BodyPart.LEFT_ELBOW),
+          Pair(BodyPart.LEFT_ELBOW, BodyPart.LEFT_SHOULDER),
+          Pair(BodyPart.LEFT_SHOULDER, BodyPart.RIGHT_SHOULDER),
+          Pair(BodyPart.RIGHT_SHOULDER, BodyPart.RIGHT_ELBOW),
+          Pair(BodyPart.RIGHT_ELBOW, BodyPart.RIGHT_WRIST),
+          Pair(BodyPart.LEFT_SHOULDER, BodyPart.LEFT_HIP),
+          Pair(BodyPart.LEFT_HIP, BodyPart.RIGHT_HIP),
+          Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_SHOULDER),
+          Pair(BodyPart.LEFT_HIP, BodyPart.LEFT_KNEE),
+          Pair(BodyPart.LEFT_KNEE, BodyPart.LEFT_ANKLE),
+          Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_KNEE),
+          Pair(BodyPart.RIGHT_KNEE, BodyPart.RIGHT_ANKLE)
+  )               /** List of body joints that should be connected.    */
   private var btnVideo: Button?= null
   private var txtVideo: TextView?= null
   private var btnImg: Button?= null
   private var txtImg: TextView?= null
+  private var btnSurf: Button?= null
+  private var mediaPlayer: MediaPlayer? = null
+  private var surfaceview: SurfaceView? = null
 
   private fun findViewById(){
     simpleVideoView = findViewById<View>(R.id.videoView) as VideoView
+    surfaceview = findViewById<View>(R.id.surfViewTest) as SurfaceView
     sampleImageView = findViewById<ImageView>(R.id.image)
     btnVideo = findViewById<Button>(R.id.btn2)
-    txtVideo = findViewById<TextView>(R.id.txtView)
+    btnSurf = findViewById(R.id.btn3)
+    txtVideo = findViewById<TextView>(R.id.txtViewVideo)
     btnImg = findViewById<Button>(R.id.btn)
-    txtImg = findViewById(R.id.testView)
+    txtImg = findViewById(R.id.txtViewImg)
+  }
+
+  private fun initView() {
+    surfaceview!!.holder.setKeepScreenOn(true)
+    surfaceview!!.holder.addCallback(SurfaceViewLis())
+  }
+
+  override fun onClick(v: View?) {}
+
+  private inner class SurfaceViewLis : SurfaceHolder.Callback {
+    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {}//表面尺寸發生改變的時候調用，如橫豎屏切換。
+
+    override fun surfaceCreated(holder: SurfaceHolder) {
+      // 創建 SurfaceHolder 的時候，如果存在上次播放的位置，則按照上次播放位置進行播放
+      /*if (currentPosition > 0) {
+          video_play(currentPosition)
+          currentPosition = 0
+      }*/
+    }
+
+    override fun surfaceDestroyed(holder: SurfaceHolder) {
+      // 銷毀 SurfaceHolder 的時候，記錄當前的播放位置並停止播放
+      if (mediaPlayer != null && mediaPlayer!!.isPlaying) {
+          mediaPlayer!!.stop()
+      }
+    }
+  }
+
+  private fun btnPlaySurfaceView(){
+    btnSurf?.setOnClickListener{
+      video_SurfaceView()
+    }
+  }
+
+  private fun btnPlayVideoView(){
+    btnVideo?.setOnClickListener{
+      video_VideoView()
+    }
+  }
+
+  private fun video_SurfaceView(){
+    mediaPlayer = MediaPlayer()
+    mediaPlayer!!.setDataSource(this, Uri.parse("android.resource://" + packageName + "/" + R.raw.jump))
+
+    mediaPlayer!!.setDisplay(surfaceview!!.holder)  // Set SurfaceView object to display video.
+    mediaPlayer!!.prepareAsync()
+    mediaPlayer!!.setOnPreparedListener {
+      mediaPlayer!!.start()
+      txtVideo?.text = "Surface View demo."
+    }
+    mediaPlayer!!.setOnCompletionListener {txtVideo?.text = "play done!"}
+    mediaPlayer!!.setOnErrorListener {
+      mp, what, extra ->
+      false
+    }
+  }
+
+  private fun video_VideoView(){
+    if (mediaControls == null) {
+      mediaControls = MediaController(this)
+      mediaControls!!.setAnchorView(this.simpleVideoView)
+    }
+    simpleVideoView!!.setVideoURI(Uri.parse("android.resource://" + packageName + "/" + R.raw.jump))
+    /*btnVideo?.setOnClickListener{//use button to play video
+      simpleVideoView!!.start()
+      txtVideo?.text = "VideoView demo"
+      Toast.makeText(applicationContext, "Start to play video!", Toast.LENGTH_LONG).show()
+    }*/
+    simpleVideoView!!.start()
+    txtVideo?.text = "Video View demo."
+    simpleVideoView!!.setOnCompletionListener {
+      Toast.makeText(applicationContext,"Video completed", Toast.LENGTH_LONG).show()
+      txtVideo?.text = "Click Play to restart."
+    }
+    simpleVideoView!!.setOnErrorListener {
+      mp, what, extra -> Toast.makeText(applicationContext, "An Error Occured " + "While Playing Video !!!", Toast.LENGTH_LONG).show()
+      false
+    }
   }
 
   private fun btnShowPoseNetImg(){
@@ -127,30 +216,10 @@ class CameraActivity : AppCompatActivity(), View.OnClickListener {
     btnImg?.setOnClickListener {
       sampleImageView?.adjustViewBounds = true       //resize (257 x 257) image
       sampleImageView?.setImageBitmap(mutableBitmap)
-      txtImg?.text = "Your view OuO"
+      txtImg?.text = "Posenet result."
     }
+  }
 
-  }
-  private fun btnPlayVideoView(){
-    if (mediaControls == null) {
-      mediaControls = MediaController(this)
-      mediaControls!!.setAnchorView(this.simpleVideoView)
-    }
-    simpleVideoView!!.setVideoURI(Uri.parse("android.resource://" + packageName + "/" + R.raw.jump))
-    btnVideo?.setOnClickListener{//use button to play video
-      simpleVideoView!!.start()
-      Toast.makeText(applicationContext, "Start to play video!", Toast.LENGTH_LONG).show()
-      txtVideo?.text = "Well done!"
-    }
-    simpleVideoView!!.setOnCompletionListener {
-      Toast.makeText(applicationContext,"Video completed", Toast.LENGTH_LONG).show()
-      txtVideo?.text = "Click Play to restart."
-    }
-    simpleVideoView!!.setOnErrorListener {
-        mp, what, extra -> Toast.makeText(applicationContext, "An Error Occured " + "While Playing Video !!!", Toast.LENGTH_LONG).show()
-      false
-    }
-  }
   private fun drawableToBitmap(drawable: Drawable): Bitmap {
     /** Returns a resized bitmap of the drawable image.  */
     val bitmap = Bitmap.createBitmap(257, 257, Bitmap.Config.ARGB_8888)
@@ -159,7 +228,5 @@ class CameraActivity : AppCompatActivity(), View.OnClickListener {
     drawable.draw(canvas)
     return bitmap
   }
-
-
 
 }
