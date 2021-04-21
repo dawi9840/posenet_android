@@ -40,6 +40,7 @@ import android.hardware.camera2.TotalCaptureResult
 import android.media.Image
 import android.media.ImageReader
 import android.media.ImageReader.OnImageAvailableListener
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -59,12 +60,16 @@ import kotlin.math.abs
 import org.tensorflow.lite.examples.posenet.lib.BodyPart
 import org.tensorflow.lite.examples.posenet.lib.Person
 import org.tensorflow.lite.examples.posenet.lib.Posenet
+import java.io.File
+import java.io.FileWriter
+import java.io.IOException
 
 class PosenetActivity :
   Fragment(),
   ActivityCompat.OnRequestPermissionsResultCallback {
-  var simpleVideoView: VideoView? = null            /** my code*/
-  var mediaControls: MediaController? = null       /** my code*/
+  var simpleVideoView: VideoView? = null
+  var mediaControls: MediaController? = null
+  private var mediaPlayer: MediaPlayer? = null
 
   /** List of body joints that should be connected.    */
   private val bodyJoints = listOf(
@@ -155,13 +160,17 @@ class PosenetActivity :
   /** Abstract interface to someone holding a display surface.    */
   private var surfaceHolder: SurfaceHolder? = null
 
+
+
+
   /** [CameraDevice.StateCallback] is called when [CameraDevice] changes its state.   */
   private val stateCallback = object : CameraDevice.StateCallback() {
 
     override fun onOpened(cameraDevice: CameraDevice) {
       cameraOpenCloseLock.release()
       this@PosenetActivity.cameraDevice = cameraDevice
-      createCameraPreviewSession()
+      //createCameraPreviewSession()
+      createCameraPreviewSession2()
     }
 
     override fun onDisconnected(cameraDevice: CameraDevice) {
@@ -180,19 +189,19 @@ class PosenetActivity :
    * A [CameraCaptureSession.CaptureCallback] that handles events related to JPEG capture.
    */
   private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
+
     override fun onCaptureProgressed(
       session: CameraCaptureSession,
       request: CaptureRequest,
       partialResult: CaptureResult
-    ) {
-    }
+    ) {}
 
     override fun onCaptureCompleted(
       session: CameraCaptureSession,
       request: CaptureRequest,
       result: TotalCaptureResult
-    ) {
-    }
+    ) {}
+
   }
 
   /**
@@ -215,53 +224,113 @@ class PosenetActivity :
     surfaceView = view.findViewById(R.id.surfaceView)
     surfaceHolder = surfaceView!!.holder
 
-    /** my code: To load a video and set a button which can control the video to play.*/
-    val txt1: TextView? = view?.findViewById(R.id.txtView)
-    val btn: Button? = view?.findViewById(R.id.btn)
-    //btn?.setOnClickListener(View.OnClickListener { view ->txt1?.text = "Well done!" })
-    simpleVideoView = view?.findViewById(R.id.videoView) as VideoView
-    if (mediaControls == null) {
-      mediaControls = MediaController(this.context)
-      mediaControls!!.setAnchorView(this.simpleVideoView)
-    }
-    simpleVideoView!!.setMediaController(mediaControls)
-    simpleVideoView!!.setVideoURI(Uri.parse("android.resource://"+ (activity?.packageName) + "/" + R.raw.jump))
-    simpleVideoView!!.requestFocus()
-    btn?.setOnClickListener(View.OnClickListener { view ->simpleVideoView!!.start()
-      showToast("Start to play video!").also { Toast.LENGTH_LONG }
-      txt1?.text = "123456!"
-    })
-    simpleVideoView!!.setOnCompletionListener {
-      showToast("Video completed")
-      Toast.LENGTH_LONG
-      txt1?.text = "Click Play to restart."
-    }
-    simpleVideoView!!.setOnErrorListener {
-      mp, what, extra -> showToast( "An Error Occured " + "While Playing Video !!!").also { Toast.LENGTH_LONG }
-      false
-    }
+    /** try code*/
+    activity!!.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    paint.textSize = 10F
+  }
+
+  override fun onStart() {
+    super.onStart()
+//  openCamera()
+//  posenet = Posenet(this.context!!)
+
+    btnPlayVideoView()
+    btnPlayPosenetVideo()
   }
 
   override fun onResume() {
     super.onResume()
     startBackgroundThread()
   }
-
-  override fun onStart() {
-    super.onStart()
-    openCamera()
-    posenet = Posenet(this.context!!)
-  }
-
   override fun onPause() {
-    closeCamera()
+/*  closeCamera()
+    stopBackgroundThread()
+    super.onPause()*/
+
+    /** try code*/
+    mediaPlayer?.pause()
+    imageReader!!.close()
+    imageReader = null
     stopBackgroundThread()
     super.onPause()
   }
 
   override fun onDestroy() {
+/*  super.onDestroy()
+    posenet.close()*/
+
+    /** try code*/
+    mediaPlayer?.release()
+    mediaPlayer = null
     super.onDestroy()
     posenet.close()
+  }
+
+  private fun btnPlayPosenetVideo(){
+    val txt1: TextView? = view?.findViewById(R.id.txtView)
+    val btn: Button? = view?.findViewById(R.id.btn2)
+
+    btn?.setOnClickListener {
+      // 1. load video
+      previewSize = Size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
+      previewHeight = previewSize!!.height
+      previewWidth = previewSize!!.width
+      mediaPlayer = MediaPlayer.create(context, R.raw.jump)
+
+      val layoutParams = surfaceView!!.layoutParams
+      val fragmentWidth = surfaceView!!.width
+
+      // 2. Resize video to PoseNet input model size
+      layoutParams.height = ((mediaPlayer!!.videoHeight.toFloat() / mediaPlayer!!.videoWidth.toFloat()) * fragmentWidth.toFloat()).toInt()
+
+      // 3. Call posenet library and define input array
+      posenet = Posenet(this.context!!)
+      rgbBytes = IntArray(mediaPlayer!!.videoHeight * mediaPlayer!!.videoWidth)
+
+      // 4. Capture images from preview in YUV format.
+      imageReader = ImageReader.newInstance(PREVIEW_WIDTH, PREVIEW_HEIGHT, ImageFormat.YUV_420_888, 2)
+      imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
+
+      // 5. This is the surface we need to record images for processing.
+      val recordingSurface = imageReader!!.surface
+      mediaPlayer?.setSurface(recordingSurface)
+      mediaPlayer?.start()
+
+      txt1?.text = "posenet output video!"
+    }
+
+  }
+
+  private fun btnPlayVideoView(){
+    /** To load a video and set a button which can control the video to play.*/
+    val txt1: TextView? = view?.findViewById(R.id.txtView)
+    val btn: Button? = view?.findViewById(R.id.btn)
+    simpleVideoView = view?.findViewById(R.id.videoView) as VideoView
+
+    if (mediaControls == null) {
+      mediaControls = MediaController(this.context)
+      mediaControls!!.setAnchorView(this.simpleVideoView)
+    }
+
+    simpleVideoView!!.setMediaController(mediaControls)
+    simpleVideoView!!.setVideoURI(Uri.parse("android.resource://"+ (activity?.packageName) + "/" + R.raw.jump))
+    simpleVideoView!!.requestFocus()
+
+    btn?.setOnClickListener {
+      simpleVideoView!!.start()
+      showToast("Start to play video!").also { Toast.LENGTH_LONG }
+      txt1?.text = "123456!"
+    }
+    simpleVideoView!!.setOnCompletionListener {
+      showToast("Video completed")
+      Toast.LENGTH_LONG
+      txt1?.text = "Click Play to restart."
+    }
+    simpleVideoView!!.setOnErrorListener {
+        mp, what, extra -> showToast( "An Error Occured " + "While Playing Video !!!").also { Toast.LENGTH_LONG }
+      false
+    }
+
   }
 
   private fun requestCameraPermission() {
@@ -303,18 +372,13 @@ class PosenetActivity :
 
         // We don't use a front facing camera in this sample.
         val cameraDirection = characteristics.get(CameraCharacteristics.LENS_FACING)
-        if (cameraDirection != null &&
-          cameraDirection == CameraCharacteristics.LENS_FACING_FRONT
-        ) {
+        if (cameraDirection != null && cameraDirection == CameraCharacteristics.LENS_FACING_FRONT){
           continue
         }
 
         previewSize = Size(PREVIEW_WIDTH, PREVIEW_HEIGHT)
 
-        imageReader = ImageReader.newInstance(
-          PREVIEW_WIDTH, PREVIEW_HEIGHT,
-          ImageFormat.YUV_420_888, /*maxImages*/ 2
-        )
+        imageReader = ImageReader.newInstance(PREVIEW_WIDTH, PREVIEW_HEIGHT, ImageFormat.YUV_420_888, /*maxImages*/ 2)
 
         sensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
 
@@ -325,8 +389,7 @@ class PosenetActivity :
         rgbBytes = IntArray(previewWidth * previewHeight)
 
         // Check if the flash is supported.
-        flashSupported =
-          characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
+        flashSupported = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
 
         this.cameraId = cameraId
 
@@ -337,10 +400,8 @@ class PosenetActivity :
     } catch (e: CameraAccessException) {
       Log.e(TAG, e.toString())
     } catch (e: NullPointerException) {
-      // Currently an NPE is thrown when the Camera2API is used but not supported on the
-      // device this code runs.
-      ErrorDialog.newInstance(getString(R.string.tfe_pn_camera_error))
-        .show(childFragmentManager, FRAGMENT_DIALOG)
+      // Currently an NPE is thrown when the Camera2API is used but not supported on the device this code runs.
+      ErrorDialog.newInstance(getString(R.string.tfe_pn_camera_error)).show(childFragmentManager, FRAGMENT_DIALOG)
     }
   }
 
@@ -348,9 +409,7 @@ class PosenetActivity :
    * Opens the camera specified by [PosenetActivity.cameraId].
    */
   private fun openCamera() {
-    val permissionCamera = getContext()!!.checkPermission(
-      Manifest.permission.CAMERA, Process.myPid(), Process.myUid()
-    )
+    val permissionCamera = context!!.checkPermission(Manifest.permission.CAMERA, Process.myPid(), Process.myUid())
     if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
       requestCameraPermission()
     }
@@ -444,8 +503,10 @@ class PosenetActivity :
         yuvBytes[0]!!,
         yuvBytes[1]!!,
         yuvBytes[2]!!,
-        previewWidth,
-        previewHeight,
+//        previewWidth,
+//        previewHeight,
+        image.width,
+        image.height,
         /*yRowStride=*/ image.planes[0].rowStride,
         /*uvRowStride=*/ image.planes[1].rowStride,
         /*uvPixelStride=*/ image.planes[1].pixelStride,
@@ -453,12 +514,10 @@ class PosenetActivity :
       )
 
       // Create bitmap from int array
-      val imageBitmap = Bitmap.createBitmap(
-        rgbBytes, previewWidth, previewHeight,
-        Bitmap.Config.ARGB_8888
-      )
+//    val imageBitmap = Bitmap.createBitmap(rgbBytes, previewWidth, previewHeight, Bitmap.Config.ARGB_8888)
+      val imageBitmap = Bitmap.createBitmap(rgbBytes, image.width, image.height, Bitmap.Config.ARGB_8888)
 
-      // Create rotated version for portrait display
+    /*// Create rotated version for portrait display (source)
       val rotateMatrix = Matrix()
       rotateMatrix.postRotate(90.0f)
 
@@ -467,8 +526,11 @@ class PosenetActivity :
         rotateMatrix, true
       )
       image.close()
+      processImage(rotatedBitmap)*/
 
-      processImage(rotatedBitmap)
+      /** try code */
+      image.close()
+      processImage(imageBitmap)
     }
   }
 
@@ -482,28 +544,16 @@ class PosenetActivity :
     val maxDifference = 1e-5  //0.00001
 
     // Checks if the bitmap has similar aspect ratio as the required model input.
-    when {
+    croppedBitmap = when {
       abs(modelInputRatio - bitmapRatio) < maxDifference -> return croppedBitmap
       modelInputRatio < bitmapRatio -> {
         // New image is taller so we are height constrained.
         val cropHeight = bitmap.height - (bitmap.width.toFloat() / modelInputRatio)
-        croppedBitmap = Bitmap.createBitmap(
-          bitmap,
-          0,
-          (cropHeight / 2).toInt(),
-          bitmap.width,
-          (bitmap.height - cropHeight).toInt()
-        )
+        Bitmap.createBitmap(bitmap, 0, (cropHeight / 2).toInt(), bitmap.width, (bitmap.height - cropHeight).toInt())
       }
       else -> {
         val cropWidth = bitmap.width - (bitmap.height.toFloat() * modelInputRatio)
-        croppedBitmap = Bitmap.createBitmap(
-          bitmap,
-          (cropWidth / 2).toInt(),
-          0,
-          (bitmap.width - cropWidth).toInt(),
-          bitmap.height
-        )
+        Bitmap.createBitmap(bitmap, (cropWidth / 2).toInt(), 0, (bitmap.width - cropWidth).toInt(), bitmap.height)
       }
     }
     return croppedBitmap
@@ -512,7 +562,7 @@ class PosenetActivity :
   /** Set the paint color and size.    */
   private fun setPaint() {
     paint.color = Color.RED
-    paint.textSize = 80.0f
+    paint.textSize = 60.0f
     paint.strokeWidth = 8.0f
   }
 
@@ -526,6 +576,7 @@ class PosenetActivity :
     val right: Int
     val top: Int
     val bottom: Int
+
     if (canvas.height > canvas.width) {
       screenWidth = canvas.width
       screenHeight = canvas.width
@@ -537,45 +588,41 @@ class PosenetActivity :
       left = (canvas.width - canvas.height) / 2
       top = 0
     }
+
     right = left + screenWidth
     bottom = top + screenHeight
 
     setPaint()
-    canvas.drawBitmap(
-      bitmap,
-      Rect(0, 0, bitmap.width, bitmap.height),
-      Rect(left, top, right, bottom),
-      paint
-    )
+    canvas.drawBitmap(bitmap, Rect(0, 0, bitmap.width, bitmap.height), Rect(left, top, right, bottom), paint)
 
     val widthRatio = screenWidth.toFloat() / MODEL_WIDTH
     val heightRatio = screenHeight.toFloat() / MODEL_HEIGHT
 
-    // Draw key points over the image.
-    /*for (keyPoint in person.keyPoints) {    //Use the position of key points obtained from the Person object to draw a skeleton on the canvas.
+    /*// Draw all key points over the image.
+    for (keyPoint in person.keyPoints) {    //Use the position of key points obtained from the Person object to draw a skeleton on the canvas.
       if (keyPoint.score > minConfidence) { //Display the key points with a confidence score above a certain threshold, which by default is 0.5.
         val position = keyPoint.position
         val adjustedX: Float = position.x.toFloat() * widthRatio + left
         val adjustedY: Float = position.y.toFloat() * heightRatio + top
         canvas.drawCircle(adjustedX, adjustedY, circleRadius, paint)
-        /**canvas.drawText(    //秀出關節點座標
-                "${adjustedX}, ${adjustedY} ",
-                adjustedX,
-                adjustedY,  paint
-        )*/
+        /** //秀出關節點座標
+        canvas.drawText("${adjustedX}, ${adjustedY} ", adjustedX, adjustedY,  paint)*/
       }
     }*/
-    for(i in 5..16){        //my code
+
+    // Draw key points: 6-17 over the image.
+    for(i in 5..16){
       if (person.keyPoints[i].score > minConfidence) {
         val adjustedX: Float = person.keyPoints[i].position.x.toFloat() * widthRatio + left
         val adjustedY: Float = person.keyPoints[i].position.y.toFloat() * heightRatio + top
         canvas.drawCircle(adjustedX, adjustedY, circleRadius, paint)
         println("(x,y): ${adjustedX}, ${adjustedY}")
-        //秀出關節點座標
-        //canvas.drawText("${adjustedX}, ${adjustedY} ",adjustedX,adjustedY,  paint)
+        //canvas.drawText("${adjustedX}, ${adjustedY} ",adjustedX,adjustedY,  paint)  //秀出關節點座標
       }
     }
-    for (line in bodyJoints) {   //畫線把關節點連起來
+
+    //畫線把關節點連起來
+    for (line in bodyJoints) {
       if (
         (person.keyPoints[line.first.ordinal].score > minConfidence) and
         (person.keyPoints[line.second.ordinal].score > minConfidence)
@@ -590,7 +637,8 @@ class PosenetActivity :
       }
     }
 
-    /*canvas.drawText(
+    /* //draw txt device  details
+    canvas.drawText(
       "Score: %.2f".format(person.score),
       //(3.0f * widthRatio),                 //i500
       //(1.0f * heightRatio + bottom),       //i500
@@ -639,18 +687,14 @@ class PosenetActivity :
   private fun createCameraPreviewSession() {
     try {
       // We capture images from preview in YUV format.
-      imageReader = ImageReader.newInstance(
-        previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2
-      )
+      imageReader = ImageReader.newInstance(previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2)
       imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
 
       // This is the surface we need to record images for processing.
       val recordingSurface = imageReader!!.surface
 
       // We set up a CaptureRequest.Builder with the output Surface.
-      previewRequestBuilder = cameraDevice!!.createCaptureRequest(
-        CameraDevice.TEMPLATE_PREVIEW
-      )
+      previewRequestBuilder = cameraDevice!!.createCaptureRequest( CameraDevice.TEMPLATE_PREVIEW)
       previewRequestBuilder!!.addTarget(recordingSurface)
 
       // Here, we create a CameraCaptureSession for camera preview.
@@ -665,19 +709,61 @@ class PosenetActivity :
             captureSession = cameraCaptureSession
             try {
               // Auto focus should be continuous for camera preview.
-              previewRequestBuilder!!.set(
-                CaptureRequest.CONTROL_AF_MODE,
-                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
-              )
+              previewRequestBuilder!!.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
               // Flash is automatically enabled when necessary.
               setAutoFlash(previewRequestBuilder!!)
 
               // Finally, we start displaying the camera preview.
               previewRequest = previewRequestBuilder!!.build()
-              captureSession!!.setRepeatingRequest(
-                previewRequest!!,
-                captureCallback, backgroundHandler
-              )
+              captureSession!!.setRepeatingRequest(previewRequest!!, captureCallback, backgroundHandler)
+            } catch (e: CameraAccessException) {
+              Log.e(TAG, e.toString())
+            }
+          }
+
+          override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {
+            showToast("Failed")
+          }
+        },
+        null
+      )
+    } catch (e: CameraAccessException) {
+      Log.e(TAG, e.toString())
+    }
+  }
+
+  private fun createCameraPreviewSession2() {
+    // We capture images from preview in YUV format.
+    imageReader = ImageReader.newInstance(previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2)
+    imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
+
+    // This is the surface we need to record images for processing.
+    val recordingSurface = imageReader!!.surface
+
+    try {
+      // We set up a CaptureRequest.Builder with the output Surface.
+      previewRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+      previewRequestBuilder!!.addTarget(recordingSurface)
+
+      // Here, we create a CameraCaptureSession for camera preview.
+      cameraDevice!!.createCaptureSession(
+        listOf(recordingSurface),
+        object : CameraCaptureSession.StateCallback() {
+          override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
+            // The camera is already closed
+            if (cameraDevice == null) return
+
+            // When the session is ready, we start displaying the preview.
+            captureSession = cameraCaptureSession
+            try {
+              // Auto focus should be continuous for camera preview.
+              previewRequestBuilder!!.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+              // Flash is automatically enabled when necessary.
+              setAutoFlash(previewRequestBuilder!!)
+
+              // Finally, we start displaying the camera preview.
+              previewRequest = previewRequestBuilder!!.build()
+              captureSession!!.setRepeatingRequest(previewRequest!!, captureCallback, backgroundHandler)
             } catch (e: CameraAccessException) {
               Log.e(TAG, e.toString())
             }
@@ -696,10 +782,7 @@ class PosenetActivity :
 
   private fun setAutoFlash(requestBuilder: CaptureRequest.Builder) {
     if (flashSupported) {
-      requestBuilder.set(
-        CaptureRequest.CONTROL_AE_MODE,
-        CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH
-      )
+      requestBuilder.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH)
     }
   }
 
@@ -726,9 +809,7 @@ class PosenetActivity :
   }
 
   companion object {
-    /**
-     * Conversion from screen rotation to JPEG orientation.
-     */
+    /** Conversion from screen rotation to JPEG orientation. */
     private val ORIENTATIONS = SparseIntArray()
     private val FRAGMENT_DIALOG = "dialog"
 
@@ -739,9 +820,7 @@ class PosenetActivity :
       ORIENTATIONS.append(Surface.ROTATION_270, 180)
     }
 
-    /**
-     * Tag for the [Log].
-     */
+    /**  Tag for the [Log]. */
     private const val TAG = "PosenetActivity"
   }
 
