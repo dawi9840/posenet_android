@@ -52,11 +52,15 @@ class PosenetFragment :
   Fragment(),
   ActivityCompat.OnRequestPermissionsResultCallback {
   var simpleVideoView: VideoView? = null
+
   var mediaControls: MediaController? = null
+
   private var mediaPlayer: MediaPlayer? = null
 
   private val maxFrames = 100
+
   private var inferenceTimesInMS = FloatArray(maxFrames)
+
   private var pipelineTimeInMS = FloatArray(maxFrames)
 
   /** List of body joints that should be connected.    */
@@ -148,32 +152,28 @@ class PosenetFragment :
   /** Abstract interface to someone holding a display surface.    */
   private var surfaceHolder: SurfaceHolder? = null
 
-
-
   /** [CameraDevice.StateCallback] is called when [CameraDevice] changes its state.   */
   private val stateCallback = object : CameraDevice.StateCallback() {
 
     override fun onOpened(cameraDevice: CameraDevice) {
-            cameraOpenCloseLock.release()
-            this@PosenetFragment.cameraDevice = cameraDevice
-            createCameraPreviewSession()
-        }
-
-        override fun onDisconnected(cameraDevice: CameraDevice) {
-            cameraOpenCloseLock.release()
-            cameraDevice.close()
-            this@PosenetFragment.cameraDevice = null
-        }
-
-        override fun onError(cameraDevice: CameraDevice, error: Int) {
-            onDisconnected(cameraDevice)
-            this@PosenetFragment.activity?.finish()
-        }
+      cameraOpenCloseLock.release()
+      this@PosenetFragment.cameraDevice = cameraDevice
+      createCameraPreviewSession()
     }
 
-  /**
-   * A [CameraCaptureSession.CaptureCallback] that handles events related to JPEG capture.
-   */
+    override fun onDisconnected(cameraDevice: CameraDevice) {
+      cameraOpenCloseLock.release()
+      cameraDevice.close()
+      this@PosenetFragment.cameraDevice = null
+    }
+
+    override fun onError(cameraDevice: CameraDevice, error: Int) {
+      onDisconnected(cameraDevice)
+      this@PosenetFragment.activity?.finish()
+    }
+  }
+
+  /**  A [CameraCaptureSession.CaptureCallback] that handles events related to JPEG capture.   */
   private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
     override fun onCaptureProgressed(
@@ -224,10 +224,8 @@ class PosenetFragment :
     val layoutParams = surfaceView!!.layoutParams
     val fragmentWidth = surfaceView!!.width
 
-    layoutParams.height =
-            ((mediaPlayer!!.videoHeight.toFloat() / mediaPlayer!!.videoWidth.toFloat()) * fragmentWidth.toFloat()).toInt()
+    layoutParams.height = ((mediaPlayer!!.videoHeight.toFloat() / mediaPlayer!!.videoWidth.toFloat()) * fragmentWidth.toFloat()).toInt()
     posenet = Posenet(this.context!!)
-//        rgbBytes = IntArray(PREVIEW_WIDTH * PREVIEW_HEIGHT)
     rgbBytes = IntArray(mediaPlayer!!.videoHeight * mediaPlayer!!.videoWidth)*/
 
 //  openCamera()
@@ -238,6 +236,7 @@ class PosenetFragment :
   override fun onResume() {
     super.onResume()
     startBackgroundThread()
+
     /*imageReader = ImageReader.newInstance(PREVIEW_WIDTH, PREVIEW_HEIGHT, ImageFormat.YUV_420_888, 2)
     imageReader!!.setOnImageAvailableListener(imageAvailableListener, backgroundHandler)
 
@@ -248,11 +247,11 @@ class PosenetFragment :
 
   override fun onPause() {
 //  closeCamera()
-      mediaPlayer?.pause()
-      imageReader!!.close()
-      imageReader = null
-      stopBackgroundThread()
-      super.onPause()
+    mediaPlayer?.pause()
+    imageReader!!.close()
+    imageReader = null
+    stopBackgroundThread()
+    super.onPause()
   }
 
   override fun onDestroy() {
@@ -292,7 +291,7 @@ class PosenetFragment :
       mediaPlayer?.setSurface(recordingSurface)
       mediaPlayer?.start()
 
-      txt1?.text = "posenet output video!"
+      txt1?.text = "Posenet output video!"
     }
 
   }
@@ -315,7 +314,7 @@ class PosenetFragment :
     btn?.setOnClickListener {
       simpleVideoView!!.start()
       showToast("Start to play video!").also { Toast.LENGTH_LONG }
-      txt1?.text = "123456!"
+      txt1?.text = "Src video on video view!"
     }
     simpleVideoView!!.setOnCompletionListener {
       showToast("Video completed")
@@ -356,9 +355,7 @@ class PosenetFragment :
     it == PackageManager.PERMISSION_GRANTED
   }
 
-  /**
-   * Sets up member variables related to camera.
-   */
+  /** Sets up member variables related to camera.   */
   private fun setUpCameraOutputs() {
     val activity = activity
     val manager = activity!!.getSystemService(Context.CAMERA_SERVICE) as CameraManager
@@ -400,9 +397,7 @@ class PosenetFragment :
     }
   }
 
-  /**
-   * Opens the camera specified by [PosenetFragment.cameraId].
-   */
+  /** Opens the camera specified by [PosenetFragment.cameraId].   */
   private fun openCamera() {
     val permissionCamera = context!!.checkPermission(Manifest.permission.CAMERA, Process.myPid(), Process.myUid())
     if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
@@ -423,9 +418,7 @@ class PosenetFragment :
     }
   }
 
-  /**
-   * Closes the current [CameraDevice].
-   */
+  /** Closes the current [CameraDevice].   */
   private fun closeCamera() {
     if (captureSession == null) {
       return
@@ -446,17 +439,13 @@ class PosenetFragment :
     }
   }
 
-  /**
-   * Starts a background thread and its [Handler].
-   */
+  /** Starts a background thread and its [Handler].   */
   private fun startBackgroundThread() {
     backgroundThread = HandlerThread("imageAvailableListener").also { it.start() }
     backgroundHandler = Handler(backgroundThread!!.looper)
   }
 
-  /**
-   * Stops the background thread and its [Handler].
-   */
+  /** Stops the background thread and its [Handler].   */
   private fun stopBackgroundThread() {
     backgroundThread?.quitSafely()
     try {
@@ -634,11 +623,11 @@ class PosenetFragment :
         val adjustedX: Float = person.keyPoints[i].position.x.toFloat() * widthRatio + left
         val adjustedY: Float = person.keyPoints[i].position.y.toFloat() * heightRatio + top
         canvas.drawCircle(adjustedX, adjustedY, circleRadius, paint)
-        println("(x,y): ${adjustedX}, ${adjustedY}")
+        //println("(x,y): ${adjustedX}, ${adjustedY}")
       }
     }
 
-    // 畫線把關節點連起來
+    // Draw the line to connect the body Joints points
     for (line in bodyJoints) {
       if (
         (person.keyPoints[line.first.ordinal].score > minConfidence) and
@@ -767,9 +756,7 @@ class PosenetFragment :
     draw(canvas, person, scaledBitmap)
   }
 
-  /**
-  * Creates a new [CameraCaptureSession] for camera preview.
-  */
+  /** Creates a new [CameraCaptureSession] for camera preview.   */
   private fun createCameraPreviewSession() {
     // We capture images from preview in YUV format.
     imageReader = ImageReader.newInstance(previewSize!!.width, previewSize!!.height, ImageFormat.YUV_420_888, 2)
@@ -824,9 +811,7 @@ class PosenetFragment :
     }
   }
 
-  /**
-   * Shows an error message dialog.
-   */
+  /** Shows an error message dialog.   */
   class ErrorDialog : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
       AlertDialog.Builder(activity)
