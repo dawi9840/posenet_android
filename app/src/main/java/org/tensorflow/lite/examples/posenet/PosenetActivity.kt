@@ -76,18 +76,18 @@ class PosenetActivity :
 
   /** List of body joints that should be connected.    */
   private val bodyJoints = listOf(
-          Pair(BodyPart.LEFT_WRIST, BodyPart.LEFT_ELBOW),
-          Pair(BodyPart.LEFT_ELBOW, BodyPart.LEFT_SHOULDER),
-          Pair(BodyPart.LEFT_SHOULDER, BodyPart.RIGHT_SHOULDER),
-          Pair(BodyPart.RIGHT_SHOULDER, BodyPart.RIGHT_ELBOW),
-          Pair(BodyPart.RIGHT_ELBOW, BodyPart.RIGHT_WRIST),
-          Pair(BodyPart.LEFT_SHOULDER, BodyPart.LEFT_HIP),
-          Pair(BodyPart.LEFT_HIP, BodyPart.RIGHT_HIP),
-          Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_SHOULDER),
-          Pair(BodyPart.LEFT_HIP, BodyPart.LEFT_KNEE),
-          Pair(BodyPart.LEFT_KNEE, BodyPart.LEFT_ANKLE),
-          Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_KNEE),
-          Pair(BodyPart.RIGHT_KNEE, BodyPart.RIGHT_ANKLE)
+    Pair(BodyPart.LEFT_WRIST, BodyPart.LEFT_ELBOW),
+    Pair(BodyPart.LEFT_ELBOW, BodyPart.LEFT_SHOULDER),
+    Pair(BodyPart.LEFT_SHOULDER, BodyPart.RIGHT_SHOULDER),
+    Pair(BodyPart.RIGHT_SHOULDER, BodyPart.RIGHT_ELBOW),
+    Pair(BodyPart.RIGHT_ELBOW, BodyPart.RIGHT_WRIST),
+    Pair(BodyPart.LEFT_SHOULDER, BodyPart.LEFT_HIP),
+    Pair(BodyPart.LEFT_HIP, BodyPart.RIGHT_HIP),
+    Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_SHOULDER),
+    Pair(BodyPart.LEFT_HIP, BodyPart.LEFT_KNEE),
+    Pair(BodyPart.LEFT_KNEE, BodyPart.LEFT_ANKLE),
+    Pair(BodyPart.RIGHT_HIP, BodyPart.RIGHT_KNEE),
+    Pair(BodyPart.RIGHT_KNEE, BodyPart.RIGHT_ANKLE)
   )
 
   /** Threshold for confidence score. */
@@ -192,22 +192,15 @@ class PosenetActivity :
       onDisconnected(cameraDevice)
       this@PosenetActivity.activity?.finish()
     }
+
   }
 
   /** A [CameraCaptureSession.CaptureCallback] that handles events related to JPEG capture.  */
   private val captureCallback = object : CameraCaptureSession.CaptureCallback() {
 
-    override fun onCaptureProgressed(
-            session: CameraCaptureSession,
-            request: CaptureRequest,
-            partialResult: CaptureResult
-    ) {}
+    override fun onCaptureProgressed(session: CameraCaptureSession, request: CaptureRequest, partialResult: CaptureResult) {}
 
-    override fun onCaptureCompleted(
-            session: CameraCaptureSession,
-            request: CaptureRequest,
-            result: TotalCaptureResult
-    ) {}
+    override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest, result: TotalCaptureResult) {}
 
   }
 
@@ -230,7 +223,6 @@ class PosenetActivity :
   override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     surfaceView = view.findViewById(R.id.surfaceView)
     surfaceView2 = view.findViewById(R.id.surfaceView2)
-
     surfaceHolder = surfaceView!!.holder
     surfaceHolder2 = surfaceView2!!.holder
 
@@ -259,17 +251,16 @@ class PosenetActivity :
     stopBackgroundThread()
     super.onPause()*/
 
-    /** try code*/
     mediaPlayer?.pause()
-    imageReader!!.close()
-    imageReader = null
-
     mediaPlayer2?.pause()
+
+    imageReader!!.close()
     imageReader2!!.close()
+
+    imageReader = null
     imageReader2 = null
 
     stopBackgroundThread()
-
     super.onPause()
   }
 
@@ -277,11 +268,10 @@ class PosenetActivity :
 /*  super.onDestroy()
     posenet.close()*/
 
-    /** try code*/
     mediaPlayer?.release()
-    mediaPlayer = null
-
     mediaPlayer2?.release()
+
+    mediaPlayer = null
     mediaPlayer2 = null
 
     super.onDestroy()
@@ -400,15 +390,10 @@ class PosenetActivity :
     }
   }
 
-  override fun onRequestPermissionsResult(
-          requestCode: Int,
-          permissions: Array<String>,
-          grantResults: IntArray
-  ) {
+  override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
     if (requestCode == REQUEST_CAMERA_PERMISSION) {
       if (allPermissionsGranted(grantResults)) {
-        ErrorDialog.newInstance(getString(R.string.tfe_pn_request_permission))
-                .show(childFragmentManager, FRAGMENT_DIALOG)
+        ErrorDialog.newInstance(getString(R.string.tfe_pn_request_permission)).show(childFragmentManager, FRAGMENT_DIALOG)
       }
     } else {
       super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -419,9 +404,7 @@ class PosenetActivity :
     it == PackageManager.PERMISSION_GRANTED
   }
 
-  /**
-   * Sets up member variables related to camera.
-   */
+  /** Sets up member variables related to camera.   */
   private fun setUpCameraOutputs() {
     val activity = activity
     val manager = activity!!.getSystemService(Context.CAMERA_SERVICE) as CameraManager
@@ -464,9 +447,7 @@ class PosenetActivity :
     }
   }
 
-  /**
-   * Opens the camera specified by [PosenetActivity.cameraId].
-   */
+  /** Opens the camera specified by [PosenetActivity.cameraId].   */
   private fun openCamera() {
     val permissionCamera = context!!.checkPermission(Manifest.permission.CAMERA, Process.myPid(), Process.myUid())
     if (permissionCamera != PackageManager.PERMISSION_GRANTED) {
@@ -487,9 +468,7 @@ class PosenetActivity :
     }
   }
 
-  /**
-   * Closes the current [CameraDevice].
-   */
+  /** Closes the current [CameraDevice].   */
   private fun closeCamera() {
     if (captureSession == null) {
       return
@@ -499,12 +478,16 @@ class PosenetActivity :
       cameraOpenCloseLock.acquire()
       captureSession!!.close()
       captureSession = null
+
       cameraDevice!!.close()
       cameraDevice = null
+
       imageReader!!.close()
       imageReader = null
+
       imageReader2!!.close()
       imageReader2 = null
+
     } catch (e: InterruptedException) {
       throw RuntimeException("Interrupted while trying to lock camera closing.", e)
     } finally {
@@ -512,9 +495,7 @@ class PosenetActivity :
     }
   }
 
-  /**
-   * Starts a background thread and its [Handler].
-   */
+  /** Starts a background thread and its [Handler].   */
   private fun startBackgroundThread() {
     backgroundThread = HandlerThread("imageAvailableListener").also { it.start() }
     backgroundHandler = Handler(backgroundThread!!.looper)
@@ -523,9 +504,7 @@ class PosenetActivity :
     backgroundHandler2 = Handler(backgroundThread2!!.looper)
   }
 
-  /**
-   * Stops the background thread and its [Handler].
-   */
+  /** Stops the background thread and its [Handler].   */
   private fun stopBackgroundThread() {
     backgroundThread?.quitSafely()
     backgroundThread2?.quitSafely()
@@ -898,34 +877,31 @@ class PosenetActivity :
       previewRequestBuilder!!.addTarget(recordingSurface)
 
       // Here, we create a CameraCaptureSession for camera preview.
-      cameraDevice!!.createCaptureSession(
-              listOf(recordingSurface),
-              object : CameraCaptureSession.StateCallback() {
-                override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
-                  // The camera is already closed
-                  if (cameraDevice == null) return
+      cameraDevice!!.createCaptureSession(listOf(recordingSurface), object : CameraCaptureSession.StateCallback() {
+        override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
+          // The camera is already closed
+          if (cameraDevice == null) return
 
-                  // When the session is ready, we start displaying the preview.
-                  captureSession = cameraCaptureSession
-                  try {
-                    // Auto focus should be continuous for camera preview.
-                    previewRequestBuilder!!.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                    // Flash is automatically enabled when necessary.
-                    setAutoFlash(previewRequestBuilder!!)
+          // When the session is ready, we start displaying the preview.
+          captureSession = cameraCaptureSession
+          try {
+            // Auto focus should be continuous for camera preview.
+            previewRequestBuilder!!.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
 
-                    // Finally, we start displaying the camera preview.
-                    previewRequest = previewRequestBuilder!!.build()
-                    captureSession!!.setRepeatingRequest(previewRequest!!, captureCallback, backgroundHandler)
-                  } catch (e: CameraAccessException) {
-                    Log.e(TAG, e.toString())
-                  }
-                }
+            // Flash is automatically enabled when necessary.
+            setAutoFlash(previewRequestBuilder!!)
 
-                override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {
-                  showToast("Failed")
-                }
-              },
-              null
+            // Finally, we start displaying the camera preview.
+            previewRequest = previewRequestBuilder!!.build()
+
+            captureSession!!.setRepeatingRequest(previewRequest!!, captureCallback, backgroundHandler)
+
+          } catch (e: CameraAccessException) {
+            Log.e(TAG, e.toString())
+          }
+        }
+        override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {showToast("Failed")}
+        }, null
       )
     } catch (e: CameraAccessException) {
       Log.e(TAG, e.toString())
@@ -946,34 +922,32 @@ class PosenetActivity :
       previewRequestBuilder!!.addTarget(recordingSurface)
 
       // Here, we create a CameraCaptureSession for camera preview.
-      cameraDevice!!.createCaptureSession(
-              listOf(recordingSurface),
-              object : CameraCaptureSession.StateCallback() {
-                override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
-                  // The camera is already closed
-                  if (cameraDevice == null) return
+      cameraDevice!!.createCaptureSession(listOf(recordingSurface), object : CameraCaptureSession.StateCallback() {
+        override fun onConfigured(cameraCaptureSession: CameraCaptureSession) {
 
-                  // When the session is ready, we start displaying the preview.
-                  captureSession = cameraCaptureSession
-                  try {
-                    // Auto focus should be continuous for camera preview.
-                    previewRequestBuilder!!.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                    // Flash is automatically enabled when necessary.
-                    setAutoFlash(previewRequestBuilder!!)
+          // The camera is already closed
+          if (cameraDevice == null) return
 
-                    // Finally, we start displaying the camera preview.
-                    previewRequest = previewRequestBuilder!!.build()
-                    captureSession!!.setRepeatingRequest(previewRequest!!, captureCallback, backgroundHandler)
-                  } catch (e: CameraAccessException) {
-                    Log.e(TAG, e.toString())
-                  }
-                }
+          // When the session is ready, we start displaying the preview.
+          captureSession = cameraCaptureSession
 
-                override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {
-                  showToast("Failed")
-                }
-              },
-              null
+          try {
+            // Auto focus should be continuous for camera preview.
+            previewRequestBuilder!!.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+
+            // Flash is automatically enabled when necessary.
+            setAutoFlash(previewRequestBuilder!!)
+
+            // Finally, we start displaying the camera preview.
+            previewRequest = previewRequestBuilder!!.build()
+            captureSession!!.setRepeatingRequest(previewRequest!!, captureCallback, backgroundHandler)
+          } catch (e: CameraAccessException) {
+            Log.e(TAG, e.toString())
+          }
+        }
+
+        override fun onConfigureFailed(cameraCaptureSession: CameraCaptureSession) {showToast("Failed")}
+      },null
       )
     } catch (e: CameraAccessException) {
       Log.e(TAG, e.toString())
