@@ -38,17 +38,19 @@ import kotlin.math.abs
 class CameraActivity : AppCompatActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    /** Fragment: PosenetActivity, PosenetFragment, Posenet01ImageTest, Posenet02VideoTest   **/
     setContentView(R.layout.tfe_pn_activity_camera)
     savedInstanceState ?: supportFragmentManager.beginTransaction()
       .replace(R.id.container, PosenetActivity()).commit()
-      //.replace(R.id.container, PosenetFragment()).commit()
 
+    /** For tfe_pn_activity_test.xml**/
     /*setContentView(R.layout.tfe_pn_activity_test)
     findViewById()
     initView()
     btnPlayVideoView()
     btnShowPoseNetImg()
-    btnPlaySurfaceView()*/
+    btnPlaySurfaceView()
+    */
   }
 
   private var simpleVideoView: VideoView? = null
