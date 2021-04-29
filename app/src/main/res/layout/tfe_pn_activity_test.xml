@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+
+  <TextView
+      android:id="@+id/txtViewImg"
+      android:layout_width="148dp"
+      android:layout_height="37dp"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentTop="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="42dp"
+      android:layout_marginTop="693dp"
+      android:layout_marginEnd="220dp"
+      android:layout_marginBottom="1dp"
+      android:text="testView!"
+      android:textColor="@android:color/holo_blue_light"
+      android:textSize="20dp" />
+
+  <TextView
+      android:id="@+id/txtViewVideo"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="44dp"
+      android:layout_marginEnd="55dp"
+      android:layout_marginBottom="491dp"
+      android:text="Click SURFACE or VIDEOVIEW btn "
+      android:textColor="@android:color/holo_blue_light"
+      android:textSize="20dp"
+      app:layout_constraintBottom_toBottomOf="parent"
+      app:layout_constraintHorizontal_bias="0.436"
+      app:layout_constraintLeft_toLeftOf="parent"
+      app:layout_constraintRight_toRightOf="parent"
+      app:layout_constraintTop_toTopOf="parent"
+      app:layout_constraintVertical_bias="0.845" />
+
+  <Button
+      android:id="@+id/btn"
+      android:layout_width="98dp"
+      android:layout_height="wrap_content"
+      android:layout_below="@+id/toolbar"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="282dp"
+      android:layout_marginTop="616dp"
+      android:layout_marginEnd="31dp"
+      android:layout_marginBottom="24dp"
+      android:background="@android:color/holo_blue_dark"
+      android:text="@string/posenet"
+      android:textColor="@android:color/white" />
+
+  <Button
+      android:id="@+id/btn2"
+      android:layout_width="106dp"
+      android:layout_height="26dp"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentTop="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="210dp"
+      android:layout_marginTop="330dp"
+      android:layout_marginEnd="95dp"
+      android:layout_marginBottom="374dp"
+      android:background="@android:color/holo_blue_dark"
+      android:text="VideoView"
+      android:textColor="@android:color/white" />
+
+  <Button
+      android:id="@+id/btn3"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentTop="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="54dp"
+      android:layout_marginTop="330dp"
+      android:layout_marginEnd="250dp"
+      android:layout_marginBottom="374dp"
+      android:background="@android:color/holo_blue_dark"
+      android:text="Surface"
+      android:textColor="@android:color/white" />
+
+  <VideoView
+      android:id="@+id/videoView"
+      android:layout_width="186dp"
+      android:layout_height="128dp"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentTop="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="224dp"
+      android:layout_marginTop="55dp"
+      android:layout_marginEnd="1dp"
+      android:layout_marginBottom="548dp" />
+
+  <SurfaceView
+      android:id="@+id/surfViewTest"
+      android:layout_width="221dp"
+      android:layout_height="128dp"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="0dp"
+      android:layout_marginEnd="190dp"
+      android:layout_marginBottom="548dp" />
+
+  <ImageView
+      android:id="@+id/image"
+      android:layout_width="394dp"
+      android:layout_height="263dp"
+      android:layout_alignParentStart="true"
+      android:layout_alignParentTop="true"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="1dp"
+      android:layout_marginTop="407dp"
+      android:layout_marginEnd="16dp"
+      android:layout_marginBottom="60dp"
+      android:scaleType="center" />
+
+</RelativeLayout>
